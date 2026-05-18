@@ -4,17 +4,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consistência na Academia</title>
+    <title>Magrinhos para o casamento</title>
     <link rel="stylesheet" href="style.css">
 
     <!-- Link para o Manifest (Obrigatório para PWA) -->
     <link rel="manifest" href="manifest.json">
+    
+    <!-- Registro do Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js');
+      }
+    </script>
 
     <!-- Configurações específicas para o iOS (Safari) funcionar como App -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Foco Academia">
-    <link rel="apple-touch-icon" href="icone.ico">
+    <meta name="apple-mobile-web-app-title" content="Magrinhos para o casamento">
+    <link rel="apple-touch-icon" href="icone-192.png">
 </head>
 
 <body>
@@ -35,7 +42,7 @@
 
     <div class="container">
         <header>
-            <h1>Foco na Consistência 💪</h1>
+            <h1>Magrinhos para o casamento 👰🤵</h1>
             <p class="subtitle">Disputa Saudável do Casal</p>
         </header>
 
