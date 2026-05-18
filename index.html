@@ -10,12 +10,12 @@
 
     <!-- Link para o Manifest (Obrigatório para PWA) -->
     <link rel="manifest" href="manifest.json">
-    
+
     <!-- Registro do Service Worker -->
     <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js');
-      }
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
+        }
     </script>
 
     <!-- Configurações específicas para o iOS (Safari) funcionar como App -->
@@ -45,6 +45,13 @@
         <header>
             <h1>Magrinhos para o casamento 👰🤵</h1>
         </header>
+
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button id="btn-sincronizar"
+                style="background-color: #0288d1; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.95em; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+                🔄 Forçar Sincronização
+            </button>
+        </div>
 
         <main class="competition-grid">
             <!-- BLOCO RAFAEL (usuario1) -->
@@ -78,6 +85,12 @@
 
                 <div class="actions">
                     <button id="checkin-usuario1" class="btn-primary">Marcar Treino</button>
+
+                    <!-- Botão Dedicado para Clique Acidental -->
+                    <button id="desfazer-usuario1"
+                        style="display: none; background-color: #d32f2f; color: white; border: none; padding: 10px 14px; margin-top: 8px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer;">Clique
+                        acidental? Desfazer</button>
+
                     <button id="reset-usuario1" class="btn-danger">Falhei</button>
                 </div>
             </section>
@@ -113,6 +126,12 @@
 
                 <div class="actions">
                     <button id="checkin-usuario2" class="btn-primary">Marcar Treino</button>
+
+                    <!-- Botão Dedicado para Clique Acidental -->
+                    <button id="desfazer-usuario2"
+                        style="display: none; background-color: #d32f2f; color: white; border: none; padding: 10px 14px; margin-top: 8px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer;">Clique
+                        acidental? Desfazer</button>
+
                     <button id="reset-usuario2" class="btn-danger">Falhei</button>
                 </div>
             </section>
