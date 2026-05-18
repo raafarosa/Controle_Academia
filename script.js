@@ -12,8 +12,8 @@ const targets = [
 
 // Estado local da aplicação para os usuários
 let appData = {
-    usuario1: { streak: 0 },
-    usuario2: { streak: 0 }
+    usuario1: { streak: 0, treinouHoje: false },
+    usuario2: { streak: 0, treinouHoje: false }
 };
 
 // Atualiza a interface visual de ambos os atletas simultaneamente
@@ -22,11 +22,29 @@ function updateDashboard() {
 
     users.forEach(user => {
         const streak = appData[user].streak;
+        const treinouHoje = appData[user].treinouHoje;
+        const ehUtil = appData[user].util !== undefined ? appData[user].util : true;
+        const btnCheckin = document.getElementById(`checkin-${user}`);
         
-        // Atualiza o texto do streak
         document.getElementById(`streak-${user}`).innerText = `${streak} ${streak === 1 ? 'Dia' : 'Dias'}`;
 
-        // Determina a meta atual do bloco
+        // CONTROLES VISUAIS DINÂMICOS DO BOTÃO COM VALIDAÇÃO DE DIA ÚTIL
+        if (btnCheckin) {
+            if (!ehUtil) {
+                btnCheckin.innerText = "Academia Fechada (Feriado/FDS)";
+                btnCheckin.style.backgroundColor = "#757575"; // Cinza escuro indicando bloqueio
+                btnCheckin.disabled = true; // Desativa o clique
+            } else if (treinouHoje) {
+                btnCheckin.innerText = "Treinado! (Desfazer)";
+                btnCheckin.style.backgroundColor = "#2e7d32"; // Verde
+                btnCheckin.disabled = false;
+            } else {
+                btnCheckin.innerText = "Marcar Treino";
+                btnCheckin.style.backgroundColor = ""; // Cor padrão
+                btnCheckin.disabled = false;
+            }
+        }
+
         let currentTarget = targets[targets.length - 1];
         let previousDays = 0;
 
@@ -39,90 +57,133 @@ function updateDashboard() {
         }
 
         document.getElementById(`phase-${user}`).innerText = currentTarget.label;
-
-        // Calcula a porcentagem da barra de progresso do bloco atual
         const targetRange = currentTarget.days - previousDays;
         const currentProgress = streak - previousDays;
-        const percentage = Math.min((currentProgress / targetRange) * 100, 100);
-        document.getElementById(`progress-${user}`).style.width = `${percentage}%`;
+        const percentage = Math.max((currentProgress / targetRange) * 100, 0);
+        
+        const progressBar = document.getElementById(`progress-${user}`);
+        if (progressBar) progressBar.style.width = `${Math.min(percentage, 100)}%`;
 
-        // Atualiza os Badges da Linha do Tempo para este usuário
         targets.forEach(target => {
             const badgeEl = document.getElementById(`badge-${user}-${target.suffix}`);
             if (badgeEl) {
-                if (streak >= target.days) {
-                    badgeEl.classList.add('completed');
-                } else {
-                    badgeEl.classList.remove('completed');
-                }
+                if (streak >= target.days) badgeEl.classList.add('completed');
+                else badgeEl.classList.remove('completed');
             }
         });
     });
 }
 
-// Busca os dados iniciais do Google Sheets
+// Busca os dados do Google Sheets tratando de forma segura contra travamentos de CORS
+// Busca os dados do Google Sheets tratando de forma segura contra travamentos de CORS
 async function fetchData() {
     try {
+        if (document.getElementById('streak-usuario1')) document.getElementById('streak-usuario1').innerText = "Carregando...";
+        if (document.getElementById('streak-usuario2')) document.getElementById('streak-usuario2').innerText = "Carregando...";
+
         const response = await fetch(SCRIPT_URL);
         if (response.ok) {
-            const data = await response.json();
-            appData = data;
+            const textData = await response.text();
+            const data = JSON.parse(textData);
+            
+            appData.usuario1.streak = data.usuario1.streak || 0;
+            appData.usuario2.streak = data.usuario2.streak || 0;
+            
+            appData.usuario1.treinouHoje = !!data.usuario1.treinouHoje;
+            appData.usuario2.treinouHoje = !!data.usuario2.treinouHoje;
+            
+            // Grava a informação de dia util recebida do servidor
+            appData.usuario1.util = data.usuario1.util;
+            appData.usuario2.util = data.usuario2.util;
+
             updateDashboard();
         }
     } catch (error) {
         console.error("Erro ao buscar dados do Sheets:", error);
+        updateDashboard(); 
     }
 }
 
-// Envia a ação para a API usando Query Parameters (evita problemas de CORS)
+// Envia a ação para a API usando rotas limpas de Query Parameters
 async function sendActionToSheets(user, actionType) {
     try {
         const urlComParametros = `${SCRIPT_URL}?user=${user}&action=${actionType}`;
 
+        // O modo 'no-cors' garante que a requisição chegue ao Google sem que o navegador bloqueie o envio
         await fetch(urlComParametros, {
             method: 'GET',
             mode: 'no-cors'
         });
 
-        // Aguarda um pequeno intervalo para o banco processar antes de re-atualizar a tela
-        setTimeout(fetchData, 800);
+        // Aguarda 1.2 segundos para o banco consolidar e atualiza a tela com o dado real do servidor
+        setTimeout(fetchData, 1200);
     } catch (error) {
         console.error("Erro ao enviar dados para o Sheets:", error);
     }
 }
 
 // Configuração dos Eventos dos Botões (Rafael)
-document.getElementById('checkin-usuario1').addEventListener('click', () => {
-    appData.usuario1.streak += 1;
-    updateDashboard();
-    sendActionToSheets('usuario1', 'checkin');
-});
+const btnCheckin1 = document.getElementById('checkin-usuario1');
+if (btnCheckin1) {
+    btnCheckin1.addEventListener('click', () => {
+        appData.usuario1.treinouHoje = !appData.usuario1.treinouHoje;
+        
+        if (appData.usuario1.treinouHoje) {
+            appData.usuario1.streak += 1;
+        } else {
+            appData.usuario1.streak = Math.max(0, appData.usuario1.streak - 1);
+        }
+        
+        updateDashboard(); 
+        sendActionToSheets('usuario1', 'checkin');
+    });
+}
 
-document.getElementById('reset-usuario1').addEventListener('click', () => {
-    if (confirm("Rafael, tem certeza que deseja zerar seu contador de consistência?")) {
-        appData.usuario1.streak = 0;
-        updateDashboard();
-        sendActionToSheets('usuario1', 'reset');
-    }
-});
+const btnReset1 = document.getElementById('reset-usuario1');
+if (btnReset1) {
+    btnReset1.addEventListener('click', () => {
+        if (confirm("Rafael, tem certeza que deseja zerar seu contador de consistência?")) {
+            appData.usuario1.streak = 0;
+            appData.usuario1.treinouHoje = false;
+            updateDashboard();
+            sendActionToSheets('usuario1', 'reset');
+        }
+    });
+}
 
 // Configuração dos Eventos dos Botões (Isabelly)
-document.getElementById('checkin-usuario2').addEventListener('click', () => {
-    appData.usuario2.streak += 1;
-    updateDashboard();
-    sendActionToSheets('usuario2', 'checkin');
-});
-
-document.getElementById('reset-usuario2').addEventListener('click', () => {
-    if (confirm("Isabelly, tem certeza que deseja zerar seu contador de consistência?")) {
-        appData.usuario2.streak = 0;
+const btnCheckin2 = document.getElementById('checkin-usuario2');
+if (btnCheckin2) {
+    btnCheckin2.addEventListener('click', () => {
+        appData.usuario2.treinouHoje = !appData.usuario2.treinouHoje;
+        
+        if (appData.usuario2.treinouHoje) {
+            appData.usuario2.streak += 1;
+        } else {
+            appData.usuario2.streak = Math.max(0, appData.usuario2.streak - 1);
+        }
+        
         updateDashboard();
-        sendActionToSheets('usuario2', 'reset');
-    }
-});
+        sendActionToSheets('usuario2', 'checkin');
+    });
+}
+
+const btnReset2 = document.getElementById('reset-usuario2');
+if (btnReset2) {
+    btnReset2.addEventListener('click', () => {
+        if (confirm("Isabelly, tem certeza que deseja zerar seu contador de consistência?")) {
+            appData.usuario2.streak = 0;
+            appData.usuario2.treinouHoje = false;
+            updateDashboard();
+            sendActionToSheets('usuario2', 'reset');
+        }
+    });
+}
 
 // Inicialização ao carregar a página
-fetchData();
+document.addEventListener('DOMContentLoaded', () => {
+    fetchData();
+});
 
 
 // ============================================================
@@ -133,39 +194,33 @@ const installBanner = document.getElementById('pwa-install-banner');
 const btnPwaInstall = document.getElementById('btn-pwa-install');
 const btnPwaClose = document.getElementById('btn-pwa-close');
 
-// Registra o Service Worker (Garante ciclo correto baseado no app de Plantão)
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
             .then(reg => {
-                console.log('Service Worker rodando em escopo:', reg.scope);
-                // Força atualização em background se o sw.js mudar
+                console.log('Service Worker ativo:', reg.scope);
                 reg.update();
             })
-            .catch(err => console.log('Erro ao registrar SW:', err));
+            .catch(err => console.log('Erro SW:', err));
     });
 }
 
-// Intercepta e aguarda o momento que o navegador aprova os critérios do manifest
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
     
-    // Se o usuário nunca instalou ou fechou recentemente, exibe a barra
     if (installBanner && !localStorage.getItem('pwa-dismissed')) {
         installBanner.style.display = 'flex';
         document.body.classList.add('banner-active');
     }
 });
 
-// Botão de Confirmação de Instalação
 if (btnPwaInstall) {
     btnPwaInstall.addEventListener('click', async () => {
         if (!deferredPrompt) return;
         
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
-        console.log(`Escolha do usuário: ${outcome}`);
         
         deferredPrompt = null;
         if (installBanner) {
@@ -175,23 +230,11 @@ if (btnPwaInstall) {
     });
 }
 
-// Botão de fechar (Guarda preferência para não ficar irritando o casal em loop)
 if (btnPwaClose) {
     btnPwaClose.addEventListener('click', () => {
         if (installBanner) {
             installBanner.style.display = 'none';
             document.body.classList.remove('banner-active');
-            // Opcional: Descomente abaixo se não quiser que a barra reapareça na mesma sessão
-            // localStorage.setItem('pwa-dismissed', 'true');
         }
     });
 }
-
-// Trata fechamento se o app for instalado de outra forma externa (Ex: pelos 3 pontinhos)
-window.addEventListener('appinstalled', () => {
-    console.log('App instalado com sucesso!');
-    if (installBanner) {
-        installBanner.style.display = 'none';
-        document.body.classList.remove('banner-active');
-    }
-});
