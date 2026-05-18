@@ -8,16 +8,16 @@ const ASSETS = [
   './icone.ico'
 ];
 
-// Instala o Service Worker e guarda os arquivos estruturais no cache
+// Instala o Service Worker e armazena os arquivos estruturais no cache básico
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS);
-    })
+    }).then(() => self.skipWaiting())
   );
 });
 
-// Ativa o Worker e limpa caches antigos se houver atualização
+// Ativa e limpa caches antigos se houver mudança de versão
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) => {
@@ -28,15 +28,15 @@ self.addEventListener('activate', (e) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
 });
 
-// Serve os arquivos direto do cache quando estiver offline
+// OBRIGATÓRIO PARA PWA: Interceptador de requisições (Fetch)
 self.addEventListener('fetch', (e) => {
   e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      return cachedResponse || fetch(e.request);
+    fetch(e.request).catch(() => {
+      return caches.match(e.request);
     })
   );
 });

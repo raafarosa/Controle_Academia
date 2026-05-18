@@ -20,13 +20,92 @@ body {
     background-color: var(--bg-color);
     color: var(--text-color);
     display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
     padding: 20px;
+    padding-top: 20px;
+    transition: padding-top 0.3s ease;
+}
+
+/* Estado dinâmico aplicado quando a barra de instalação estiver ativa */
+body.banner-active {
+    padding-top: 90px;
+}
+
+/* Banner de Instalação PWA Remodelado */
+.install-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: #29292e;
+    border-bottom: 3px solid var(--primary-color);
+    padding: 14px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 9999;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.banner-content {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.banner-icon {
+    font-size: 1.8rem;
+}
+
+.banner-text strong {
+    display: block;
+    font-size: 1rem;
+    color: #fff;
+    margin-bottom: 2px;
+}
+
+.banner-text p {
+    font-size: 0.8rem;
+    color: #c4c4cc;
+}
+
+.banner-buttons {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.btn-banner-install {
+    background-color: var(--primary-color);
+    color: #fff;
+    padding: 10px 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-banner-close {
+    background: transparent;
+    color: #8d8d99;
+    padding: 8px;
+    font-size: 0.85rem;
+    border: none;
+    cursor: pointer;
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
 }
 
 .container {
     width: 100%;
-    max-width: 900px; /* Aumentado para acomodar os dois blocos lado a lado */
+    max-width: 900px;
     background: var(--card-bg);
     border-radius: 8px;
     padding: 24px;
@@ -56,7 +135,6 @@ h1 {
     gap: 24px;
 }
 
-/* Estilização individual dos cards de atletas */
 .athlete-card {
     background: var(--bg-color);
     border: 2px solid var(--border-color);
@@ -78,7 +156,7 @@ h1 {
     border-bottom: 1px solid var(--border-color);
 }
 
-.rafael-title { color: var(----rafael-color); }
+.rafael-title { color: var(--rafael-color); }
 .isabelly-title { color: var(--isabelly-color); }
 
 .dashboard-stats {
@@ -122,7 +200,6 @@ h1 {
     transition: width 0.3s ease;
 }
 
-/* Linha do tempo de Badges */
 .goals-timeline {
     margin-bottom: 20px;
 }
@@ -157,7 +234,6 @@ h1 {
     font-weight: bold;
 }
 
-/* Ações */
 .actions {
     display: flex;
     flex-direction: column;
@@ -189,8 +265,23 @@ button:hover {
     border: 1px solid var(--danger-color);
 }
 
-/* Responsividade para Telas Menores (Celulares) */
 @media (max-width: 600px) {
+    body.banner-active {
+        padding-top: 110px;
+    }
+
+    .install-banner {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 12px 16px;
+    }
+
+    .banner-buttons {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
     .competition-grid {
         grid-template-columns: 1fr;
         gap: 16px;

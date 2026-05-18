@@ -1,10 +1,12 @@
 {
-  "name": "Consistência na Academia",
+  "name": "Foco na Consistência",
   "short_name": "Foco Academia",
+  "description": "Disputa Saudável de Consistência na Academia",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#121214",
-  "theme_color": "#00b37e",
+  "theme_color": "#202024",
   "orientation": "portrait-primary",
   "icons": [
     {
@@ -15,7 +17,7 @@
     {
       "src": "icone.ico",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/x-icon",
       "purpose": "any maskable"
     }
   ]

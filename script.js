@@ -124,11 +124,74 @@ document.getElementById('reset-usuario2').addEventListener('click', () => {
 // Inicialização ao carregar a página
 fetchData();
 
-// Registra o Service Worker para permitir a instalação do PWA
+
+// ============================================================
+// ====== LÓGICA DE INSTALAÇÃO DO APLICATIVO (PWA FIX) ========
+// ============================================================
+let deferredPrompt;
+const installBanner = document.getElementById('pwa-install-banner');
+const btnPwaInstall = document.getElementById('btn-pwa-install');
+const btnPwaClose = document.getElementById('btn-pwa-close');
+
+// Registra o Service Worker (Garante ciclo correto baseado no app de Plantão)
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-            .then(reg => console.log('Service Worker registrado com sucesso!', reg.scope))
-            .catch(err => console.log('Falha ao registrar o Service Worker:', err));
+            .then(reg => {
+                console.log('Service Worker rodando em escopo:', reg.scope);
+                // Força atualização em background se o sw.js mudar
+                reg.update();
+            })
+            .catch(err => console.log('Erro ao registrar SW:', err));
     });
 }
+
+// Intercepta e aguarda o momento que o navegador aprova os critérios do manifest
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Se o usuário nunca instalou ou fechou recentemente, exibe a barra
+    if (installBanner && !localStorage.getItem('pwa-dismissed')) {
+        installBanner.style.display = 'flex';
+        document.body.classList.add('banner-active');
+    }
+});
+
+// Botão de Confirmação de Instalação
+if (btnPwaInstall) {
+    btnPwaInstall.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`Escolha do usuário: ${outcome}`);
+        
+        deferredPrompt = null;
+        if (installBanner) {
+            installBanner.style.display = 'none';
+            document.body.classList.remove('banner-active');
+        }
+    });
+}
+
+// Botão de fechar (Guarda preferência para não ficar irritando o casal em loop)
+if (btnPwaClose) {
+    btnPwaClose.addEventListener('click', () => {
+        if (installBanner) {
+            installBanner.style.display = 'none';
+            document.body.classList.remove('banner-active');
+            // Opcional: Descomente abaixo se não quiser que a barra reapareça na mesma sessão
+            // localStorage.setItem('pwa-dismissed', 'true');
+        }
+    });
+}
+
+// Trata fechamento se o app for instalado de outra forma externa (Ex: pelos 3 pontinhos)
+window.addEventListener('appinstalled', () => {
+    console.log('App instalado com sucesso!');
+    if (installBanner) {
+        installBanner.style.display = 'none';
+        document.body.classList.remove('banner-active');
+    }
+});
