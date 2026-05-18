@@ -1,8 +1,16 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbX3XA_D6F4MkFz88bmY7nsJBaCR44z-YzFEvKMPLmme_yufjZ5eylPMdx5Upmn60B7A/exec";
+// CONFIGURAÇÕES DO SUPABASE - PREENCHA COM SUAS CHAVES
+const SUPABASE_URL = "https://SEU_PROJETO.supabase.co";
+const SUPABASE_KEY = "SUA_CHAVE_ANON_PUBLIC";
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Função geradora de metas procedurais idênticas para o casal
-function gerarProximaMetaProcedural(streakAtual, nomeUsuario) {
-    // Metas base iniciais padrão (Garante a largada do app até 3 meses)
+// Variáveis de Estado da Aplicação
+let modoAuth = "login"; // login ou cadastro
+let usuarioLogado = null;
+let dadosDoGrupo = null;
+let membrosDoGrupo = [];
+
+// Função Geradora de Metas Procedurais Unificadas usando o ID do Grupo como Semente
+function gerarProximaMetaProcedural(streakAtual, idGrupo) {
     let metas = [
         { label: '1 Semana', days: 7, suffix: '1w' },
         { label: '2 Semanas', days: 14, suffix: '2w' },
@@ -11,26 +19,22 @@ function gerarProximaMetaProcedural(streakAtual, nomeUsuario) {
         { label: '3 Meses', days: 90, suffix: '3m' }
     ];
 
-    // Se o streak passou dos 3 meses (90 dias), começamos a expansão procedural
     let ultimoAlvoDias = 90;
     let contadorFase = 1;
 
     while (streakAtual >= ultimoAlvoDias) {
-        // MUDANÇA AQUI: Usamos "casamento" como semente universal. 
-        // Isso garante que o resultado do sorteio seja estritamente IGUAL para os dois.
-        let stringSemente = "casamento" + contadorFase;
+        // Usa o ID do grupo + a fase atual para fixar a mesma aleatoriedade para todos os membros
+        let stringSemente = idGrupo + contadorFase;
         let hash = 0;
         for (let i = 0; i < stringSemente.length; i++) {
             hash = stringSemente.charCodeAt(i) + ((hash << 5) - hash);
         }
 
-        // Sorteia o acréscimo: +1 mês (30d), +2 meses (60d), +3 meses (90d) ou +6 meses (180d)
         let opcoesAdicionais = [30, 60, 90, 180];
         let indiceSorteado = Math.abs(hash) % opcoesAdicionais.length;
         let diasAdicionais = opcoesAdicionais[indiceSorteado];
 
         ultimoAlvoDias += diasAdicionais;
-
         let labelMeses = Math.round(ultimoAlvoDias / 30);
 
         metas.push({
@@ -41,326 +45,336 @@ function gerarProximaMetaProcedural(streakAtual, nomeUsuario) {
 
         contadorFase++;
     }
-
     return metas;
 }
 
-let appData = {
-    usuario1: { streak: 0, treinouHoje: false, util: true },
-    usuario2: { streak: 0, treinouHoje: false, util: true }
-};
-
-function updateDashboard() {
-    const users = ['usuario1', 'usuario2'];
-
-    // 1. Captura a data real do Sistema Operacional do aparelho (Formato: dd/mm/yyyy)
-    const hojeDispositivo = new Date().toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    });
-
-    users.forEach(user => {
-        const streak = appData[user].streak;
-        const ehUtil = appData[user].util !== undefined ? appData[user].util : true;
-
-        const btnCheckin = document.getElementById(`checkin-${user}`);
-        const btnDesfazer = document.getElementById(`desfazer-${user}`);
-
-        document.getElementById(`streak-${user}`).innerText = `${streak} ${streak === 1 ? 'Dia' : 'Dias'}`;
-
-        // [MANTÉM AS SUAS TRAVAS ATUAIS DE BOTÃO]
-        let jaTreinouHojeReal = appData[user].treinouHoje;
-        if (appData[user].historicoCompleto) {
-            jaTreinouHojeReal = appData[user].historicoCompleto.some(registro =>
-                registro.data === hojeDispositivo && registro.marcado === true
-            );
-        }
-        appData[user].treinouHoje = jaTreinouHojeReal;
-
-        if (btnCheckin && btnDesfazer) {
-            if (!ehUtil) {
-                btnCheckin.innerText = "Academia Fechada (Feriado/FDS)";
-                btnCheckin.style.backgroundColor = "#757575";
-                btnCheckin.disabled = true;
-                btnDesfazer.style.display = "none";
-            } else if (jaTreinouHojeReal) {
-                btnCheckin.innerText = "Parabéns pelo treino!";
-                btnCheckin.style.backgroundColor = "#2e7d32";
-                btnCheckin.disabled = true;
-                btnDesfazer.style.display = "block";
-            } else {
-                btnCheckin.innerText = "Marcar Treino";
-                btnCheckin.style.backgroundColor = "";
-                btnCheckin.disabled = false;
-                btnDesfazer.style.display = "none";
-            }
-        }
-
-        // ============================================================
-        // NOVA LOGICA DE METAS PROCEDURAIS INFINITAS
-        // ============================================================
-        // Gera a trilha de metas estendida dinamicamente baseada no streak atual do usuário
-        const listaMetasDinamica = gerarProximaMetaProcedural(streak, user);
-
-        let currentTarget = listaMetasDinamica[listaMetasDinamica.length - 1];
-        let previousDays = 0;
-
-        for (let target of listaMetasDinamica) {
-            if (streak < target.days) {
-                currentTarget = target;
-                break;
-            }
-            previousDays = target.days;
-        }
-
-        // Atualiza o texto da meta na tela (Ex: "Meta Atual: 5 Meses")
-        document.getElementById(`phase-${user}`).innerText = currentTarget.label;
-
-        // Calcula a porcentagem exata de preenchimento do bloco atual
-        const targetRange = currentTarget.days - previousDays;
-        const currentProgress = streak - previousDays;
-        const percentage = Math.max((currentProgress / targetRange) * 100, 0);
-
-        const progressBar = document.getElementById(`progress-${user}`);
-        if (progressBar) progressBar.style.width = `${Math.min(percentage, 100)}%`;
-
-        // Atualiza a cor das bolinhas (badges) de conquistas básicas do HTML (1w até 3m)
-        // Como o HTML tem medalhas fixas para os 3 primeiros meses, validamos apenas elas na tela
-        let conquistasIniciais = ['1w', '2w', '1m', '2m', '3m'];
-        conquistasIniciais.forEach(suffix => {
-            const badgeEl = document.getElementById(`badge-${user}-${suffix}`);
-            if (badgeEl) {
-                // Procura o Alvo equivalente em dias para acender a medalha corretamente
-                let diasEquivalentes = suffix === '1w' ? 7 : suffix === '2w' ? 14 : suffix === '1m' ? 30 : suffix === '2m' ? 60 : 90;
-                if (streak >= diasEquivalentes) badgeEl.classList.add('completed');
-                else badgeEl.classList.remove('completed');
-            }
-        });
-    });
-}
-
-// Substitua a função fetchData do seu script.js por esta:
-async function fetchData() {
-    try {
-        if (document.getElementById('streak-usuario1')) document.getElementById('streak-usuario1').innerText = "Carregando...";
-        if (document.getElementById('streak-usuario2')) document.getElementById('streak-usuario2').innerText = "Carregando...";
-
-        const response = await fetch(SCRIPT_URL);
-        if (response.ok) {
-            const textData = await response.text();
-            const data = JSON.parse(textData);
-
-            // Mapeamento dos Streaks e regras básicas
-            appData.usuario1.streak = data.usuario1.streak || 0;
-            appData.usuario2.streak = data.usuario2.streak || 0;
-            appData.usuario1.util = data.usuario1.util;
-            appData.usuario2.util = data.usuario2.util;
-
-            // Injeta o histórico bruto retornado pelo servidor para validação de data do S.O.
-            if (data.historicoBruto) {
-                appData.usuario1.historicoCompleto = data.historicoBruto.map(r => ({ data: r.data, marcado: !!r.u1 }));
-                appData.usuario2.historicoCompleto = data.historicoBruto.map(r => ({ data: r.data, marcado: !!r.u2 }));
-            } else {
-                // Fallback caso o back-end simplificado mude de estrutura
-                appData.usuario1.treinouHoje = !!data.usuario1.treinouHoje;
-                appData.usuario2.treinouHoje = !!data.usuario2.treinouHoje;
-            }
-
-            updateDashboard();
-        }
-    } catch (error) {
-        console.error("Erro ao buscar dados do Sheets:", error);
-        updateDashboard();
-    }
-}
-
-// Substitua a função sendActionToSheets do seu script.js por esta:
-async function sendActionToSheets(user, actionType) {
-    try {
-        if (document.getElementById(`streak-${user}`)) document.getElementById(`streak-${user}`).innerText = "Salvando...";
-
-        const urlComParametros = `${SCRIPT_URL}?user=${user}&action=${actionType}`;
-        const response = await fetch(urlComParametros);
-
-        if (response.ok) {
-            const textData = await response.text();
-            const data = JSON.parse(textData);
-
-            appData.usuario1.streak = data.usuario1.streak || 0;
-            appData.usuario2.streak = data.usuario2.streak || 0;
-            appData.usuario1.util = data.usuario1.util;
-            appData.usuario2.util = data.usuario2.util;
-
-            if (data.historicoBruto) {
-                appData.usuario1.historicoCompleto = data.historicoBruto.map(r => ({ data: r.data, marcado: !!r.u1 }));
-                appData.usuario2.historicoCompleto = data.historicoBruto.map(r => ({ data: r.data, marcado: !!r.u2 }));
-            } else {
-                appData.usuario1.treinouHoje = !!data.usuario1.treinouHoje;
-                appData.usuario2.treinouHoje = !!data.usuario2.treinouHoje;
-            }
-
-            updateDashboard();
-        }
-    } catch (error) {
-        console.error("Erro na sincronização direta:", error);
-        setTimeout(fetchData, 1000);
-    }
-}
-
-// ============================================================
-// ====== CONTROLE DE CLIQUE E TRAVAS DE SEGURANÇA ============
-// ============================================================
-
-// AÇÕES DO RAFAEL (USUARIO 1)
-const btnCheckin1 = document.getElementById('checkin-usuario1');
-if (btnCheckin1) {
-    btnCheckin1.addEventListener('click', () => {
-        // TRAVA DE SEGURANÇA: Bloqueia a execução se já estiver marcado no dia
-        if (appData.usuario1.treinouHoje) {
-            console.warn("Ação bloqueada: Rafael já possui treino registrado hoje.");
-            return;
-        }
-
-        // Se estiver liberado, executa a marcação
-        appData.usuario1.treinouHoje = true;
-        appData.usuario1.streak += 1;
-        updateDashboard(); // Atualiza a interface imediatamente (Bloqueia o botão na tela)
-        sendActionToSheets('usuario1', 'checkin'); // Envia para o banco de dados
-    });
-}
-
-const btnDesfazer1 = document.getElementById('desfazer-usuario1');
-if (btnDesfazer1) {
-    btnDesfazer1.addEventListener('click', () => {
-        if (confirm("Deseja remover a marcação de treino de hoje?")) {
-            appData.usuario1.treinouHoje = false;
-            appData.usuario1.streak = Math.max(0, appData.usuario1.streak - 1);
-            updateDashboard(); // Libera o botão principal na tela imediatamente
-            sendActionToSheets('usuario1', 'checkin'); // Avisa o banco para retirar o X
-        }
-    });
-}
-
-const btnReset1 = document.getElementById('reset-usuario1');
-if (btnReset1) {
-    btnReset1.addEventListener('click', () => {
-        if (confirm("Rafael, tem certeza que deseja zerar seu contador de consistência?")) {
-            appData.usuario1.streak = 0;
-            appData.usuario1.treinouHoje = false;
-            updateDashboard();
-            sendActionToSheets('usuario1', 'reset');
-        }
-    });
-}
-
-// AÇÕES DA ISABELLY (USUARIO 2)
-const btnCheckin2 = document.getElementById('checkin-usuario2');
-if (btnCheckin2) {
-    btnCheckin2.addEventListener('click', () => {
-        // TRAVA DE SEGURANÇA: Bloqueia a execução se já estiver marcado no dia
-        if (appData.usuario2.treinouHoje) {
-            console.warn("Ação bloqueada: Isabelly já possui treino registrado hoje.");
-            return;
-        }
-
-        // Se estiver liberado, executa a marcação
-        appData.usuario2.treinouHoje = true;
-        appData.usuario2.streak += 1;
-        updateDashboard(); // Atualiza a interface imediatamente (Bloqueia o botão na tela)
-        sendActionToSheets('usuario2', 'checkin'); // Envia para o banco de dados
-    });
-}
-
-const btnDesfazer2 = document.getElementById('desfazer-usuario2');
-if (btnDesfazer2) {
-    btnDesfazer2.addEventListener('click', () => {
-        if (confirm("Deseja remover a marcação de treino de hoje?")) {
-            appData.usuario2.treinouHoje = false;
-            appData.usuario2.streak = Math.max(0, appData.usuario2.streak - 1);
-            updateDashboard(); // Libera o botão principal na tela imediatamente
-            sendActionToSheets('usuario2', 'checkin'); // Avisa o banco para retirar o X
-        }
-    });
-}
-
-const btnReset2 = document.getElementById('reset-usuario2');
-if (btnReset2) {
-    btnReset2.addEventListener('click', () => {
-        if (confirm("Isabelly, tem certeza que deseja zerar seu contador de consistência?")) {
-            appData.usuario2.streak = 0;
-            appData.usuario2.treinouHoje = false;
-            updateDashboard();
-            sendActionToSheets('usuario2', 'reset');
-        }
-    });
-}
-
-// ============================================================
-// ====== LÓGICA DE INSTALAÇÃO DO APLICATIVO (PWA) ============
-// ============================================================
-let deferredPrompt;
-const installBanner = document.getElementById('pwa-install-banner');
-const btnPwaInstall = document.getElementById('btn-pwa-install');
-const btnPwaClose = document.getElementById('btn-pwa-close');
-
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-            .then(reg => { reg.update(); })
-            .catch(err => console.log('Erro SW:', err));
-    });
-}
-
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    if (installBanner && !localStorage.getItem('pwa-dismissed')) {
-        installBanner.style.display = 'flex';
-        document.body.classList.add('banner-active');
+// Verifica e monitora o Estado de Login do Usuário
+window.addEventListener('DOMContentLoaded', async () => {
+    configurarEventosIniciais();
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+        usuarioLogado = session.user;
+        await verificarFluxoDeGrupo();
+    } else {
+        mostrarTela('autenticacao');
     }
 });
 
-if (btnPwaInstall) {
-    btnPwaInstall.addEventListener('click', async () => {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt();
-        await deferredPrompt.userChoice;
-        deferredPrompt = null;
-        if (installBanner) {
-            installBanner.style.display = 'none';
-            document.body.classList.remove('banner-active');
+// Direciona o fluxo visual do App dependendo do vínculo do usuário
+async function verificarFluxoDeGrupo() {
+    if (!usuarioLogado) return;
+
+    // Busca o perfil do usuário logado
+    const { data: perfil, error } = await supabase
+        .from('perfis')
+        .select('*, grupos(nome, codigo_convite)')
+        .eq('id', usuarioLogado.id)
+        .single();
+
+    if (error || !perfil || !perfil.grupo_id) {
+        mostrarTela('grupo');
+    } else {
+        dadosDoGrupo = perfil.grupos;
+        dadosDoGrupo.id = perfil.grupo_id;
+        document.getElementById('btn-logout').style.display = 'block';
+        document.getElementById('exibir-codigo-grupo').innerText = `Código do Grupo: ${dadosDoGrupo.codigo_convite}`;
+        if (document.getElementById('titulo-app')) {
+            document.getElementById('titulo-app').innerText = `${dadosDoGrupo.nome} 🏋️‍♂️`;
+        }
+        mostrarTela('painel');
+        await buscarDadosDoGrupo();
+    }
+}
+
+// Busca todos os usuários do grupo e o histórico vertical de treinos de cada um
+async function buscarDadosDoGrupo() {
+    if (!dadosDoGrupo) return;
+
+    const { data: perfis, error } = await supabase
+        .from('perfis')
+        .select(`
+            id,
+            nome_completo,
+            frequencia (
+                data_treino,
+                marcado
+            )
+        `)
+        .eq('grupo_id', dadosDoGrupo.id);
+
+    if (error) {
+        console.error("Erro ao puxar dados do grupo:", error);
+        return;
+    }
+
+    membrosDoGrupo = perfis;
+    renderizarPainelTreinos();
+}
+
+// Desenha dinamicamente os cards de competição na tela
+function renderizarPainelTreinos() {
+    const container = document.getElementById('painel-treinos');
+    container.innerHTML = '';
+
+    const hojeISO = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const diaSemana = new Date().getDay();
+    const ehFimDeSemana = (diaSemana === 0 || diaSemana === 6); // 0 = Domingo, 6 = Sábado
+
+    membrosDoGrupo.forEach((membro, index) => {
+        // Filtra os treinos válidos e calcula o Streak sequencial de dias úteis
+        const treinosValidos = membro.frequencia ? membro.frequencia.filter(t => t.marcado) : [];
+        const datasTreinadas = new Set(treinosValidos.map(t => t.data_treino));
+        
+        const streak = calcularStreakDiasUteis(datasTreinadas);
+        const treinouHoje = datasTreinadas.has(hojeISO);
+
+        // Gera as metas procedurais baseadas no streak e no ID do grupo
+        const listaMetas = gerarProximaMetaProcedural(streak, dadosDoGrupo.id);
+        let metaAtual = listaMetas[listaMetas.length - 1];
+        let diasAnteriores = 0;
+
+        for (let meta of listaMetas) {
+            if (streak < meta.days) {
+                metaAtual = meta;
+                break;
+            }
+            diasAnteriores = meta.days;
+        }
+
+        const alcanceMeta = metaAtual.days - diasAnteriores;
+        const progressoAtual = streak - diasAnteriores;
+        const porcentagemBarra = Math.min(Math.max((progressoAtual / alcanceMeta) * 100, 0), 100);
+
+        // Atribui cores alternadas aos cards para manter a diferenciação estética
+        const corCardClasse = index % 2 === 0 ? 'card-usuario1-estilo' : 'card-usuario2-estilo';
+
+        const cardHTML = `
+            <section class="athlete-card ${corCardClasse}">
+                <h2 class="athlete-name">${membro.nome_completo}</h2>
+
+                <div class="dashboard-stats">
+                    <div class="stat-box">
+                        <h3>Streak Atual</h3>
+                        <p>${streak} ${streak === 1 ? 'Dia' : 'Dias'}</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>Meta Atual</h3>
+                        <p>${metaAtual.label}</p>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" style="width: ${porcentagemBarra}%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="goals-timeline">
+                    <h3>Progresso do Bloco</h3>
+                    <div class="badges">
+                        <div class="badge ${streak >= 7 ? 'completed' : ''}">1 Sem</div>
+                        <div class="badge ${streak >= 14 ? 'completed' : ''}">2 Sem</div>
+                        <div class="badge ${streak >= 30 ? 'completed' : ''}">1 Mês</div>
+                        <div class="badge ${streak >= 60 ? 'completed' : ''}">2 Mês</div>
+                        <div class="badge ${streak >= 90 ? 'completed' : ''}">3 Mês</div>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    ${membro.id === usuarioLogado.id ? `
+                        <button id="btn-checkin-real" class="btn-primary" ${ehFimDeSemana || treinouHoje ? 'disabled style="background-color: #757575;"' : ''}>
+                            ${ehFimDeSemana ? "Academia Fechada (FDS)" : treinouHoje ? "Parabéns pelo treino!" : "Marcar Treino"}
+                        </button>
+                        <button id="btn-desfazer-real" style="display: ${treinouHoje ? 'block' : 'none'}; background-color: #d32f2f; color: white; border: none; padding: 10px 14px; margin-top: 8px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                            Clique acidental? Desfazer
+                        </button>
+                        <button id="btn-falhei-real" class="btn-danger" style="margin-top: 15px;">Falhei</button>
+                    ` : `
+                        <p style="text-align:center; font-size: 0.8rem; color:#8d8d99; padding: 10px;">Acompanhando progresso...</p>
+                    `}
+                </div>
+            </section>
+        `;
+
+        container.insertAdjacentHTML('beforeend', cardHTML);
+
+        // Aplica os eventos de clique apenas nos botões do próprio usuário logado
+        if (membro.id === usuarioLogado.id) {
+            document.getElementById('btn-checkin-real')?.addEventListener('click', () => registrarTreino(hojeISO));
+            document.getElementById('btn-desfazer-real')?.addEventListener('click', () => desfazerTreino(hojeISO));
+            document.getElementById('btn-falhei-real')?.addEventListener('click', resetarContador);
         }
     });
 }
 
-if (btnPwaClose) {
-    btnPwaClose.addEventListener('click', () => {
-        if (installBanner) {
-            installBanner.style.display = 'none';
-            document.body.classList.remove('banner-active');
+// Calcula o streak retroativo pulando finais de semana de forma perfeita
+function calcularStreakDiasUteis(datasTreinadas) {
+    if (datasTreinadas.size === 0) return 0;
+
+    let streak = 0;
+    let checarData = new Date(); // Começa de hoje para trás
+
+    while (true) {
+        const diaSemana = checarData.getDay();
+        const strData = checarData.toISOString().split('T')[0];
+
+        if (diaSemana === 0 || diaSemana === 6) {
+            // Se for sábado ou domingo e tiver registro, conta. Se não tiver, pula sem quebrar o streak
+            if (datasTreinadas.has(strData)) {
+                streak++;
+            }
+        } else {
+            // Se for dia útil e tiver treinado, soma ao streak
+            if (datasTreinadas.has(strData)) {
+                streak++;
+            } else {
+                // Se for dia útil e NÃO tiver treinado, o streak quebrou (a menos que seja hoje e ele ainda vá treinar)
+                const hojeStr = new Date().toISOString().split('T')[0];
+                if (strData === hojeStr) {
+                    // Ignora o dia de hoje se ele ainda não marcou
+                } else {
+                    break; 
+                }
+            }
         }
+        checarData.setDate(checarData.getDate() - 1);
+    }
+    return streak;
+}
+
+// Operações de Escrita e Modificação no Banco de Dados Supabase
+async function registrarTreino(dataISO) {
+    const { error } = await supabase
+        .from('frequencia')
+        .upsert({ 
+            usuario_id: usuarioLogado.id, 
+            group_id: dadosDoGrupo.id, 
+            data_treino: dataISO, 
+            marcado: true 
+        }, { onConflict: 'usuario_id, data_treino' });
+
+    if (error) alert("Erro ao computar presença.");
+    await buscarDadosDoGrupo();
+}
+
+async function desfazerTreino(dataISO) {
+    if (confirm("Deseja apagar o registro de treino de hoje?")) {
+        const { error } = await supabase
+            .from('frequencia')
+            .delete()
+            .eq('usuario_id', usuarioLogado.id)
+            .eq('data_treino', dataISO);
+
+        if (error) alert("Erro ao remover registro.");
+        await buscarDadosDoGrupo();
+    }
+}
+
+async function resetarContador() {
+    if (confirm("Tem certeza absoluta que deseja desativar todo o seu histórico de progresso e zerar seu streak?")) {
+        const { error } = await supabase
+            .from('frequencia')
+            .update({ marcado: false })
+            .eq('usuario_id', usuarioLogado.id);
+
+        if (error) alert("Erro ao reiniciar histórico.");
+        await buscarDadosDoGrupo();
+    }
+}
+
+// Fluxo de Cadastro e Entrada de Usuários / Grupos
+function configurarEventosIniciais() {
+    // Altera interface entre Login e Cadastro
+    document.getElementById('AlternarAuth').addEventListener('click', () => {
+        if (modoAuth === "login") {
+            modoAuth = "cadastro";
+            document.getElementById('auth-titulo').innerText = "Criar Nova Conta";
+            document.getElementById('grupo-nome-completo').style.style.display = 'block';
+            document.getElementById('btn-auth-principal').innerText = "Cadastrar";
+            document.getElementById('AlternarAuth').innerText = "Já tem uma conta? Conecte-se";
+        } else {
+            modoAuth = "login";
+            document.getElementById('auth-titulo').innerText = "Entrar no Sistema";
+            document.getElementById('grupo-nome-completo').style.display = 'none';
+            document.getElementById('btn-auth-principal').innerText = "Entrar";
+            document.getElementById('AlternarAuth').innerText = "Não tem conta? Cadastre-se";
+        }
+    });
+
+    // Submissão do Formulário de Autenticação
+    document.getElementById('btn-auth-principal').addEventListener('click', async () => {
+        const email = document.getElementById('auth-email').value.trim();
+        const senha = document.getElementById('auth-senha').value.trim();
+        const nome = document.getElementById('auth-nome').value.trim();
+
+        if (!email || !senha) return alert("Preencha os campos obrigatórios!");
+
+        if (modoAuth === "cadastro") {
+            if (!nome) return alert("Preencha seu nome para o card.");
+            
+            const { data: authData, error: authError } = await supabase.auth.signUp({ email, password: senha });
+            if (authError) return alert(`Erro no cadastro: ${authError.message}`);
+            
+            if (authData.user) {
+                await supabase.from('perfis').insert({ id: authData.user.id, nome_completo: nome });
+                usuarioLogado = authData.user;
+                await verificarFluxoDeGrupo();
+            }
+        } else {
+            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password: senha });
+            if (authError) return alert(`Acesso negado: ${authError.message}`);
+            usuarioLogado = authData.user;
+            await verificarFluxoDeGrupo();
+        }
+    });
+
+    // Ações de gerenciamento de grupo
+    document.getElementById('btn-criar-grupo').addEventListener('click', async () => {
+        const nomeGrupo = document.getElementById('input-nome-grupo').value.trim();
+        if (!nomeGrupo) return alert("Dê um nome ao grupo.");
+
+        const codigoUnico = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+        const { data: novoGrupo, error } = await supabase
+            .from('grupos')
+            .insert({ nome: nomeGrupo, codigo_convite: codigoUnico })
+            .select().single();
+
+        if (error) return alert("Erro ao erguer o grupo.");
+
+        await supabase.from('perfis').update({ grupo_id: novoGrupo.id }).eq('id', usuarioLogado.id);
+        await verificarFluxoDeGrupo();
+    });
+
+    document.getElementById('btn-entrar-grupo').addEventListener('click', async () => {
+        const codigo = document.getElementById('input-codigo-convite').value.trim().toUpperCase();
+        if (!codigo) return alert("Insira um código.");
+
+        const { data: grupoExistente, error } = await supabase
+            .from('grupos')
+            .select()
+            .eq('codigo_convite', codigo)
+            .single();
+
+        if (error || !grupoExistente) return alert("Código de grupo inexistente.");
+
+        await supabase.from('perfis').update({ grupo_id: grupoExistente.id }).eq('id', usuarioLogado.id);
+        await verificarFluxoDeGrupo();
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', async () => {
+        await supabase.auth.signOut();
+        window.location.reload();
+    });
+
+    document.getElementById('btn-sincronizar').addEventListener('click', async () => {
+        const btn = document.getElementById('btn-sincronizar');
+        btn.innerText = "🔄 Sincronizando...";
+        await buscarDadosDoGrupo();
+        btn.innerText = "🔄 Sincronizar";
     });
 }
 
-// EVENTO DO BOTÃO FORÇAR SINCRONIZAÇÃO
-const btnSincronizar = document.getElementById('btn-sincronizar');
-if (btnSincronizar) {
-    btnSincronizar.addEventListener('click', async () => {
-        // Altera temporariamente o texto para dar um feedback visual de clique
-        const textoOriginal = btnSincronizar.innerHTML;
-        btnSincronizar.innerHTML = "🔄 Sincronizando...";
-        btnSincronizar.disabled = true;
-        btnSincronizar.style.opacity = "0.7";
-
-        // Força a busca limpa dos dados direto do Google Sheets
-        await fetchData();
-
-        // Restaura o botão após a conclusão da leitura
-        btnSincronizar.innerHTML = textoOriginal;
-        btnSincronizar.disabled = false;
-        btnSincronizar.style.opacity = "1";
-
-        console.log("Sincronização manual concluída com sucesso!");
-    });
+function mostrarTela(tela) {
+    document.getElementById('secao-autenticacao').style.display = tela === 'autenticacao' ? 'block' : 'none';
+    document.getElementById('secao-grupo').style.display = tela === 'grupo' ? 'block' : 'none';
+    document.getElementById('secao-painel').style.display = tela === 'painel' ? 'block' : 'none';
 }

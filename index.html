@@ -4,11 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magrinhos para o casamento</title>
+    <title>Magrinhos para o Casamento</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="icon.ico" type="image/x-icon">
 
-    <!-- Link para o Manifest (Obrigatório para PWA) -->
+    <!-- Link para o Manifest (PWA) -->
     <link rel="manifest" href="manifest.json">
 
     <!-- Registro do Service Worker -->
@@ -18,11 +18,14 @@
         }
     </script>
 
-    <!-- Configurações específicas para o iOS (Safari) funcionar como App -->
+    <!-- Configurações específicas para o iOS (Safari) -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Magrinhos para o casamento">
+    <meta name="apple-mobile-web-app-title" content="Foco Academia">
     <link rel="apple-touch-icon" href="icone-192.png">
+
+    <!-- SDK Oficial do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -43,102 +46,61 @@
 
     <div class="container">
         <header>
-            <h1>Magrinhos para o casamento 👰🤵</h1>
+            <h1 id="titulo-app">Foco Academia 👰🤵</h1>
+            <button id="btn-logout" style="display: none; background: #f75a68; color: #fff; padding: 6px 12px; font-size: 0.8rem; border-radius: 4px; float: right; margin-top: -35px;">Sair</button>
         </header>
 
-        <div style="text-align: center; margin-bottom: 20px;">
-            <button id="btn-sincronizar"
-                style="background-color: #0288d1; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.95em; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
-                🔄 Forçar Sincronização
-            </button>
-        </div>
+        <!-- TELA DE AUTENTICAÇÃO (LOGIN / CADASTRO) -->
+        <section id="secao-autenticacao" class="auth-box">
+            <h2 id="auth-titulo">Entrar no Sistema</h2>
+            <div class="form-group">
+                <label>E-mail</label>
+                <input type="email" id="auth-email" placeholder="seu@email.com">
+            </div>
+            <div class="form-group">
+                <label>Senha</label>
+                <input type="password" id="auth-senha" placeholder="Sua senha">
+            </div>
+            <div class="form-group" id="grupo-nome-completo" style="display: none;">
+                <label>Seu Nome (Como aparecerá no card)</label>
+                <input type="text" id="auth-nome" placeholder="Ex: Rafael, Isabelly">
+            </div>
+            <button id="btn-auth-principal" class="btn-primary">Entrar</button>
+            <p id="AlternarAuth" class="auth-toggle">Não tem conta? Cadastre-se</p>
+        </section>
 
-        <main class="competition-grid">
-            <!-- BLOCO RAFAEL (usuario1) -->
-            <section class="athlete-card" id="card-usuario1">
-                <h2 class="athlete-name rafael-title">Rafael</h2>
+        <!-- TELA DE GERENCIAMENTO DE GRUPO -->
+        <section id="secao-grupo" class="auth-box" style="display: none;">
+            <h2>Você não possui um grupo</h2>
+            <p style="font-size: 0.9rem; color: #8d8d99; margin-bottom: 16px;">Crie um grupo inédito ou entre no grupo de alguém pelo código.</p>
+            
+            <div class="form-group">
+                <label>Entrar em um Grupo Existente</label>
+                <input type="text" id="input-codigo-convite" placeholder="Digite o código (Ex: CASAMENTO123)">
+                <button id="btn-entrar-grupo" class="btn-primary" style="margin-top: 8px;">Entrar no Grupo</button>
+            </div>
+            <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+            <div class="form-group">
+                <label>Criar um Novo Grupo</label>
+                <input type="text" id="input-nome-grupo" placeholder="Nome do grupo (Ex: Casamento Rafael e Isa)">
+                <button id="btn-criar-grupo" class="btn-primary" style="margin-top: 8px; background-color: #0288d1;">Criar Grupo Inédito</button>
+            </div>
+        </section>
 
-                <div class="dashboard-stats">
-                    <div class="stat-box">
-                        <h3>Streak Atual</h3>
-                        <p id="streak-usuario1">0 Dias</p>
-                    </div>
-                    <div class="stat-box">
-                        <h3>Meta Atual</h3>
-                        <p id="phase-usuario1">1 Semana</p>
-                        <div class="progress-bar-container">
-                            <div class="progress-bar" id="progress-usuario1"></div>
-                        </div>
-                    </div>
-                </div>
+        <!-- PAINEL PRINCIPAL DO APLICATIVO -->
+        <section id="secao-painel" style="display: none;">
+            <div style="text-align: center; margin-bottom: 20px; display: flex; justify-content: center; gap: 10px; align-items: center;">
+                <button id="btn-sincronizar" style="background-color: #0288d1; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.95em; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+                    🔄 Sincronizar
+                </button>
+                <span id="exibir-codigo-grupo" style="font-size: 0.85rem; color: #8d8d99; background: var(--bg-color); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color);"></span>
+            </div>
 
-                <div class="goals-timeline">
-                    <h3>Progresso do Bloco</h3>
-                    <div class="badges">
-                        <div class="badge" id="badge-usuario1-1w">1 Sem</div>
-                        <div class="badge" id="badge-usuario1-2w">2 Sem</div>
-                        <div class="badge" id="badge-usuario1-1m">1 Mês</div>
-                        <div class="badge" id="badge-usuario1-2m">2 Mês</div>
-                        <div class="badge" id="badge-usuario1-3m">3 Mês</div>
-                    </div>
-                </div>
-
-                <div class="actions">
-                    <button id="checkin-usuario1" class="btn-primary">Marcar Treino</button>
-
-                    <!-- Botão Dedicado para Clique Acidental -->
-                    <button id="desfazer-usuario1"
-                        style="display: none; background-color: #d32f2f; color: white; border: none; padding: 10px 14px; margin-top: 8px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer;">Clique
-                        acidental? Desfazer</button>
-
-                    <button id="reset-usuario1" class="btn-danger">Falhei</button>
-                </div>
-            </section>
-
-            <!-- BLOCO ISABELLY (usuario2) -->
-            <section class="athlete-card" id="card-usuario2">
-                <h2 class="athlete-name isabelly-title">Isabelly ✨</h2>
-
-                <div class="dashboard-stats">
-                    <div class="stat-box">
-                        <h3>Streak Atual</h3>
-                        <p id="streak-usuario2">0 Dias</p>
-                    </div>
-                    <div class="stat-box">
-                        <h3>Meta Atual</h3>
-                        <p id="phase-usuario2">1 Semana</p>
-                        <div class="progress-bar-container">
-                            <div class="progress-bar" id="progress-usuario2"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="goals-timeline">
-                    <h3>Progresso do Bloco</h3>
-                    <div class="badges">
-                        <div class="badge" id="badge-usuario2-1w">1 Sem</div>
-                        <div class="badge" id="badge-usuario2-2w">2 Sem</div>
-                        <div class="badge" id="badge-usuario2-1m">1 Mês</div>
-                        <div class="badge" id="badge-usuario2-2m">2 Mês</div>
-                        <div class="badge" id="badge-usuario2-3m">3 Mês</div>
-                    </div>
-                </div>
-
-                <div class="actions">
-                    <button id="checkin-usuario2" class="btn-primary">Marcar Treino</button>
-
-                    <!-- Botão Dedicado para Clique Acidental -->
-                    <button id="desfazer-usuario2"
-                        style="display: none; background-color: #d32f2f; color: white; border: none; padding: 10px 14px; margin-top: 8px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer;">Clique
-                        acidental? Desfazer</button>
-
-                    <button id="reset-usuario2" class="btn-danger">Falhei</button>
-                </div>
-            </section>
-        </main>
+            <!-- O JavaScript vai injetar os cards aqui dinamicamente -->
+            <main class="competition-grid" id="painel-treinos"></main>
+        </section>
     </div>
 
-    <!-- Script principal com controle de instalação -->
     <script src="script.js"></script>
 </body>
 

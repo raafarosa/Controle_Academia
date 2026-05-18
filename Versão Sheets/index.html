@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magrinhos para o casamento</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="icon.ico" type="image/x-icon">
+
+    <!-- Link para o Manifest (Obrigatório para PWA) -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Registro do Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
+        }
+    </script>
+
+    <!-- Configurações específicas para o iOS (Safari) funcionar como App -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Magrinhos para o casamento">
+    <link rel="apple-touch-icon" href="icone-192.png">
+</head>
+
+<body>
+    <!-- Notificação Customizada de Instalação PWA -->
+    <div id="pwa-install-banner" class="install-banner" style="display: none;">
+        <div class="banner-content">
+            <span class="banner-icon">📲</span>
+            <div class="banner-text">
+                <strong>Foco Academia</strong>
+                <p>Instale na tela inicial para usar como aplicativo!</p>
+            </div>
+        </div>
+        <div class="banner-buttons">
+            <button id="btn-pwa-install" class="btn-banner-install">Instalar</button>
+            <button id="btn-pwa-close" class="btn-banner-close">Agora não</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>Magrinhos para o casamento 👰🤵</h1>
+        </header>
+
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button id="btn-sincronizar"
+                style="background-color: #0288d1; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.95em; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+                🔄 Forçar Sincronização
+            </button>
+        </div>
+
+        <main class="competition-grid">
+            <!-- BLOCO RAFAEL (usuario1) -->
+            <section class="athlete-card" id="card-usuario1">
+                <h2 class="athlete-name rafael-title">Rafael</h2>
+
+                <div class="dashboard-stats">
+                    <div class="stat-box">
+                        <h3>Streak Atual</h3>
+                        <p id="streak-usuario1">0 Dias</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>Meta Atual</h3>
+                        <p id="phase-usuario1">1 Semana</p>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="progress-usuario1"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="goals-timeline">
+                    <h3>Progresso do Bloco</h3>
+                    <div class="badges">
+                        <div class="badge" id="badge-usuario1-1w">1 Sem</div>
+                        <div class="badge" id="badge-usuario1-2w">2 Sem</div>
+                        <div class="badge" id="badge-usuario1-1m">1 Mês</div>
+                        <div class="badge" id="badge-usuario1-2m">2 Mês</div>
+                        <div class="badge" id="badge-usuario1-3m">3 Mês</div>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button id="checkin-usuario1" class="btn-primary">Marcar Treino</button>
+
+                    <!-- Botão Dedicado para Clique Acidental -->
+                    <button id="desfazer-usuario1"
+                        style="display: none; background-color: #d32f2f; color: white; border: none; padding: 10px 14px; margin-top: 8px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer;">Clique
+                        acidental? Desfazer</button>
+
+                    <button id="reset-usuario1" class="btn-danger">Falhei</button>
+                </div>
+            </section>
+
+            <!-- BLOCO ISABELLY (usuario2) -->
+            <section class="athlete-card" id="card-usuario2">
+                <h2 class="athlete-name isabelly-title">Isabelly ✨</h2>
+
+                <div class="dashboard-stats">
+                    <div class="stat-box">
+                        <h3>Streak Atual</h3>
+                        <p id="streak-usuario2">0 Dias</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>Meta Atual</h3>
+                        <p id="phase-usuario2">1 Semana</p>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="progress-usuario2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="goals-timeline">
+                    <h3>Progresso do Bloco</h3>
+                    <div class="badges">
+                        <div class="badge" id="badge-usuario2-1w">1 Sem</div>
+                        <div class="badge" id="badge-usuario2-2w">2 Sem</div>
+                        <div class="badge" id="badge-usuario2-1m">1 Mês</div>
+                        <div class="badge" id="badge-usuario2-2m">2 Mês</div>
+                        <div class="badge" id="badge-usuario2-3m">3 Mês</div>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button id="checkin-usuario2" class="btn-primary">Marcar Treino</button>
+
+                    <!-- Botão Dedicado para Clique Acidental -->
+                    <button id="desfazer-usuario2"
+                        style="display: none; background-color: #d32f2f; color: white; border: none; padding: 10px 14px; margin-top: 8px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer;">Clique
+                        acidental? Desfazer</button>
+
+                    <button id="reset-usuario2" class="btn-danger">Falhei</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Script principal com controle de instalação -->
+    <script src="script.js"></script>
+</body>
+
+</html>
