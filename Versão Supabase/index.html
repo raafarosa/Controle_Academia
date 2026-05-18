@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magrinhos para o Casamento</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="icon.ico" type="image/x-icon">
+
+    <!-- Link para o Manifest (PWA) -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Registro do Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
+        }
+    </script>
+
+    <!-- Configurações específicas para o iOS (Safari) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Foco Academia">
+    <link rel="apple-touch-icon" href="icone-192.png">
+
+    <!-- SDK Oficial do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <!-- Notificação Customizada de Instalação PWA -->
+    <div id="pwa-install-banner" class="install-banner" style="display: none;">
+        <div class="banner-content">
+            <span class="banner-icon">📲</span>
+            <div class="banner-text">
+                <strong>Foco Academia</strong>
+                <p>Instale na tela inicial para usar como aplicativo!</p>
+            </div>
+        </div>
+        <div class="banner-buttons">
+            <button id="btn-pwa-install" class="btn-banner-install">Instalar</button>
+            <button id="btn-pwa-close" class="btn-banner-close">Agora não</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1 id="titulo-app">Controle Academia</h1>
+            <button id="btn-logout"
+                style="display: none; background: #f75a68; color: #fff; padding: 6px 12px; font-size: 0.8rem; border-radius: 4px; float: right; margin-top: -35px;">Sair</button>
+        </header>
+
+        <!-- TELA DE AUTENTICAÇÃO (LOGIN / CADASTRO) -->
+        <section id="secao-autenticacao" class="auth-box">
+            <h2 id="auth-titulo">Entrar no Sistema</h2>
+            <div class="form-group">
+                <label>E-mail</label>
+                <input type="email" id="auth-email" placeholder="seu@email.com">
+            </div>
+            <div class="form-group">
+                <label>Senha</label>
+                <input type="password" id="auth-senha" placeholder="Sua senha">
+            </div>
+            <div class="form-group" id="grupo-nome-completo" style="display: none;">
+                <label>Seu Nome (Como aparecerá no card)</label>
+                <input type="text" id="auth-nome" placeholder="Ex: Rafael, Isabelly">
+            </div>
+            <button id="btn-auth-principal" class="btn-primary">Entrar</button>
+            <p id="AlternarAuth" class="auth-toggle">Não tem conta? Cadastre-se</p>
+
+            <div class="auth-divider">
+                <span>ou</span>
+            </div>
+            <button id="btn-auth-google" class="btn-google">
+                <img src="https://lh3.googleusercontent.com/COZ6jeiS_1_VwG9shgKInu-5g-oZz3z5vI5s9J5zXf4V3jIeXqf_A3n1p2Z6n_u3P0A"
+                    alt="Google">
+                Entrar com o Google
+            </button>
+        </section>
+
+        <!-- TELA DE GERENCIAMENTO DE GRUPO -->
+        <section id="secao-grupo" class="auth-box" style="display: none;">
+            <h2>Você não possui um grupo</h2>
+            <p style="font-size: 0.9rem; color: #8d8d99; margin-bottom: 16px;">Crie um grupo inédito ou entre no grupo
+                de alguém pelo código.</p>
+
+            <div class="form-group">
+                <label>Entrar em um Grupo Existente</label>
+                <input type="text" id="input-codigo-convite" placeholder="Digite o código (Ex: CASAMENTO123)">
+                <button id="btn-entrar-grupo" class="btn-primary" style="margin-top: 8px;">Entrar no Grupo</button>
+            </div>
+            <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+            <div class="form-group">
+                <label>Criar um Novo Grupo</label>
+                <input type="text" id="input-nome-grupo" placeholder="Nome do grupo (Ex: Casamento Rafael e Isa)">
+                <button id="btn-criar-grupo" class="btn-primary"
+                    style="margin-top: 8px; background-color: #0288d1;">Criar Grupo Inédito</button>
+            </div>
+        </section>
+
+        <!-- PAINEL PRINCIPAL DO APLICATIVO -->
+        <section id="secao-painel" style="display: none;">
+            <div
+                style="text-align: center; margin-bottom: 20px; display: flex; justify-content: center; gap: 10px; align-items: center;">
+                <button id="btn-sincronizar"
+                    style="background-color: #0288d1; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.95em; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+                    🔄 Sincronizar
+                </button>
+                <span id="exibir-codigo-grupo"
+                    style="font-size: 0.85rem; color: #8d8d99; background: var(--bg-color); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color);"></span>
+            </div>
+
+            <!-- O JavaScript vai injetar os cards aqui dinamicamente -->
+            <main class="competition-grid" id="painel-treinos"></main>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

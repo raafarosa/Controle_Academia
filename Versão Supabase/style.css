@@ -99,8 +99,13 @@ body.banner-active {
 }
 
 @keyframes slideDown {
-    from { transform: translateY(-100%); }
-    to { transform: translateY(0); }
+    from {
+        transform: translateY(-100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
 }
 
 .container {
@@ -145,8 +150,13 @@ h1 {
     justify-content: space-between;
 }
 
-#card-usuario1 { border-color: rgba(76, 201, 240, 0.3); }
-#card-usuario2 { border-color: rgba(247, 37, 133, 0.3); }
+#card-usuario1 {
+    border-color: rgba(76, 201, 240, 0.3);
+}
+
+#card-usuario2 {
+    border-color: rgba(247, 37, 133, 0.3);
+}
 
 .athlete-name {
     font-size: 1.4rem;
@@ -156,8 +166,13 @@ h1 {
     border-bottom: 1px solid var(--border-color);
 }
 
-.rafael-title { color: var(--rafael-color); }
-.isabelly-title { color: var(--isabelly-color); }
+.rafael-title {
+    color: var(--rafael-color);
+}
+
+.isabelly-title {
+    color: var(--isabelly-color);
+}
 
 .dashboard-stats {
     display: grid;
@@ -286,8 +301,129 @@ button:hover {
         grid-template-columns: 1fr;
         gap: 16px;
     }
-    
+
     .container {
         padding: 16px;
     }
+}
+
+/* Classes Utilitárias para Entrada e Autenticação */
+.auth-box {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+    margin: 20px auto;
+    max-width: 450px;
+}
+
+.auth-box h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 1.4rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    font-size: 0.85rem;
+    color: #8d8d99;
+}
+
+.form-group input {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    padding: 12px;
+    border-radius: 6px;
+    color: var(--text-color);
+    font-size: 1rem;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.auth-toggle {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--primary-color);
+    margin-top: 14px;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+/* Modificadores de Cores Dinâmicas dos Cards do Banco */
+.card-usuario1-estilo {
+    border-color: rgba(76, 201, 240, 0.4) !important;
+}
+
+.card-usuario2-estilo {
+    border-color: rgba(247, 37, 133, 0.4) !important;
+}
+
+.card-usuario1-estilo .athlete-name {
+    color: var(--rafael-color);
+}
+
+.card-usuario2-estilo .athlete-name {
+    color: var(--isabelly-color);
+}
+
+/* Estilização do Divisor de Métodos de Login */
+.auth-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 20px 0;
+    color: #8d8d99;
+    font-size: 0.85rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.auth-divider:not(:empty)::before {
+    margin-right: .5em;
+}
+
+.auth-divider:not(:empty)::after {
+    margin-left: .5em;
+}
+
+/* Botão de Autenticação do Google */
+.btn-google {
+    background-color: #ffffff;
+    color: #121214;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    border-radius: 6px;
+    padding: 12px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-google:hover {
+    background-color: #e6e6e6;
+    filter: none;
+}
+
+.btn-google img {
+    width: 18px;
+    height: 18px;
 }
